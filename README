@@ -12,6 +12,10 @@ usage: run NetworkFlowAnalyzer.py "citybike.json" <start-station> <end-station>
 Example:
 run NetworkFlowAnalyzer.py "citybike.json" "Broadway & Battery Pl" "E 47 St & 1 Ave"
 
+run NetworkFlowAnalyzer.py [-h] [--stations] [--start_station START_STATION] [--end_station END_STATION] filename-json
+default start_station: "Broadway & Battery Pl"
+default end_station: "E 47 St & 1 Ave"
+
 outputs:
 scatter plot of all stations in network
 plot of connected network containing start and end stations

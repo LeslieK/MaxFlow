@@ -1,10 +1,15 @@
 '''
 Performs network flow analysis on a network of V points
+
 Each point is a bike station in the citibike network
 Pairs of points are connected if they are a distance of _DISTANCE km
 from each other.
 Capacity on an edge is the sum of the bike docks at each edge vertex.
+
+usage: run NetworkFlowAnalyzer "citybike.json" <start-station> <end-station>
+
 '''
+import os
 import json
 import argparse
 import matplotlib.pyplot as plt
@@ -18,9 +23,11 @@ import ConnectedComponent
 import copy
 from collections import defaultdict
 
-
 parser = argparse.ArgumentParser()
 parser.add_argument("filename", help="filename of json network", type=str)
+parser.add_argument("--stations", action="store_true", help="a list of stations from input file")
+parser.add_argument("--start_station", "-s", default="Broadway & Battery Pl", help="a station name from input file")
+parser.add_argument("--end_station", "-e", default="E 47 St & 1 Ave", help="a station name from input file", type=str)
 args = parser.parse_args()
 
 # read network data
@@ -44,9 +51,15 @@ for station in input["stationBeanList"]:
     names[row] = station["stationName"]
     row += 1
 
+# process optional args
+if args.stations:
+    for row in range(num_stations):
+        print names[row]
+    os.sys.exit(os.X_OK)    # not sure how to return to quit here; this is not an error
+
 # strategy:
-start_station = "Broadway & Battery Pl"
-end_station = "E 47 St & 1 Ave"
+start_station = args.start_station
+end_station = args.end_station
 # get vertex numbers
 source = vertex[start_station]
 target = vertex[end_station]
