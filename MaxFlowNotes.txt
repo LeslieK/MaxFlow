@@ -1,0 +1,72 @@
+Definition:
+
+flow network:
+edge-weighted digraph with positive edge weights (which refer to capacities). An st-flow network has 2 identified vertices, a source s and a destination t.
+
+st-flow:
+st-flow in an st-flow network is a set of nonnegative values associated with each edge, which we refer to as edge flows. A flow is feasible if it satisfies the condition that no edge's flow is greater than that edge's capacity and the local equilibrium condition that every vertex's netflow is zero (except s ant t).
+
+flow value:
+inflow at destination vertex, t
+
+maximum st-flow:
+Given an st-flow network, find an st-flow such that no other flow from s to t has a larger value
+
+cut:
+a partition of the vertices into 2 disjoint sets
+
+st-cut: 
+cut that places vertex s in one of its sets and vertex t in the other
+
+augumenting path:
+a path from s to t with no full forward edges and no empty backward edges
+
+residual network (from an st-network with an st-flow):
+Given an st-flow network and an st-flow, the residual network for the st-flow has the same vertices as the original and one or two edges in the residual network for each edge in the original, define as follows:
+for each edge e from v to w in the original, let fe be its flow and ce its capacity.
+If fe is positive, include an edge w->v in the residual with capcity fe
+(If fe = 0, edge w->v has 0 capcity, so edge is not in residual network.)
+If fe < ce, include an edge v->w in the residual with capacity ce - fe
+(If fe = ce, edge v->w has 0 capacity, so edge is not in residual network.)
+
+**inspiration**: residual networks allow us to use graph search to find an augmenting path, since any path from s to t in the residual netowrk coresponds directly to an augmenting path in the original network. Increasing flow along the path implies making changes in the residual network. For example,
+at least one edge on the path becomes full or empty, so at least one edge in the residual network changes direction (edge flow = edge capacity) or disappears  (but our use of an abstract residual network means that we just check for positive capacity and do not need to acutally insert and delete edges.)
+
+
+Proposition E:
+For **any** st-flow, the flow across each st-cut is equal to the value of the flow.
+
+Corollary E1. An st-flow's value cannot exceed the capacity of any st-cut.
+Corollary E2. The outflow from s is equal to the inflow to t.
+
+Proposition F: Maxflow-mincut Theorem: Let f be an st-flow. The following 3 conditions are equivalent:
+i. There exists an st-cut whose capacity equals the value of the flow f.
+ii. f is a maxflow.
+iii. There is no augmenting path with respect to f.
+
+i => ii: Corollary E1.
+ii => iii: existence of an augmenting path implies the existence of a flow with a larger flow value
+iii => i:
+strategy: Construct an st-cut st its capacity equals the flow value;
+
+Let Cs be a cut that contains all the vertices that can be reached from s with an undirected path that does not contain a full forward edge or empty backward edge.
+Let Ct be the remaining vertices. t must be in Ct (since there is no augmenting path from s to t).
+(Cs, Ct) is an st-cut, whose cut set consists of full forward edges or empty backward edges.
+Therefore the flow of the cut = the capacity of the cut.
+The flow of the cut = the value of the flow (prop E)
+Therefore, the capacity of this cut = the value of the flow
+
+Corollary: Integrality property:
+When capacities are integers there exists an integer-valued maxflow, and the Ford-Fulkerson algorithm finds it.
+Proof: Each augmenting path increases the flow by a positive integer (the bottleneck).
+
+**Genius**
+No matter what method we choose to find an augmenting path and no matter what paths we find, we always end up with a flow that does not admit an augmenting path, which therefore must be a maxflow.
+
+Mincut:
+Given an st-flow with value equal to maxflow, the mincut (Cs, Ct) such that Cs is the set of vertices reachable from s along edges that have capacity in both forward and backward directions. (All forward edges are not full; all backward edges are not empty.)
+
+
+
+
+
