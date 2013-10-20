@@ -5,72 +5,74 @@ import numpy as np
 import copy
 _DISTANCE = .4 	# km
 
-def distance(lat1, long1, lat2, long2):
-	'''returns distance, in km, between 2 points
-	'''
-	R = 6371 # Earth's radius in km
-	dLat = math.radians(lat2-lat1)
-	dLon = math.radians(long2-long1)
-	lat1 = math.radians(lat1)
-	lat2 = math.radians(lat2)
+# vectorized implementation
+def distance(v, stations):
+	'''find distance from v to all other vertices'''
+	R = 6371		
+	dLat_dLong = np.radians(stations[:, [0, 1]] - stations[v, [0, 1]]) 
+	dLat = dLat_dLong[:, 0]
+	dLong = dLat_dLong[:, 1]
+	lat = np.radians(stations[:, 0])  		# col vector of lat values for all stations; num_stations x 1
+	lat_v = np.radians(stations[v][0])    	# scalar for this station
 
-	a = (math.sin(dLat/2) * math.sin(dLat/2) +
-	    math.sin(dLon/2) * math.sin(dLon/2) * math.cos(lat1) * math.cos(lat2))
-	c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a)) 
-	d = R * c
+	dLatH = np.divide(dLat, 2)
+	dLongH =  np.divide(dLong, 2)
+	a = np.sin(dLatH) ** 2 + np.sin(dLongH) ** 2 * np.cos(lat) * np.cos(lat_v)
+	c = np.arctan2(np.sqrt(a), np.sqrt(1-a)) * 2
+	d = c * R
 	return d
 
-# for row in range(num_stations):
-# 	# dLat = math.radians(lat2-lat1) => dLat_dLong[:, 0]		num_stations x 1
-# 	# dLon = math.radians(long2-long1) => dLat_dLong[:, 1]		num_stations x 1
-# 	dLat_dLong = stations[:, [0, 1]] - stations[row, [0, 1]] #  num_stations x 2
-# 	dLat = map(math.radians, dLat_dLong[:, 0])
-# 	dLon = map(math.radians, dLat_dLong[:, 1])
-# 	lat1 = map(math.radians, stations[:, 0])  # col vector of lat1 values for all stations; num_stations x 1
-# 	lat2 = math.radians(stations[row][0])     # scalar for this station (this row)
-
-# 	a = (math.sin(dLat/2) * math.sin(dLat/2) +
-# 	    math.sin(dLon/2) * math.sin(dLon/2) * math.cos(lat1) * math.cos(lat2))
-
-# dLatH = map(lambda x: x/2., dLat)
-# dLongH =  map(lambda x: x/2., dLong)
-# np.sin(dLatH) ** 2 + np.sin(dLonH) ** 2 * np.cos(lat1) * np.cos(lat2)
-
-def findFlowEdges(stations, totalDocks, source):
+# vectorized implementation that calls distance2
+def findFlowEdges(stations, totalDocks, source, capacity_func):
 	'''return flow edges
 
 	stations = numpy array; column 0: latitude  column 1: longitude  
-	capacities[row] = capacity of vertex=row  
+	totalDocks = numpy array: column 0 is totalDocks at station 
 	source = source vertex
 	'''
 	flow_edges = collections.deque()
-
 	num_stations = len(stations)
-	marked_v = [False] * num_stations # marks all from vertices
-	marked_w = [False] * num_stations # marks all to vertices
+	marked_v = np.ones((num_stations,), dtype=bool) # marks all from vertices
+	marked_w = np.ones((num_stations,), dtype=bool) # marks all to vertices
 	q = collections.deque()
 	q.append(source)
 	
 	while len(q) > 0:
 		# q not empty
 		v = q.popleft()
-		marked_v[v] = True
-		vlat = stations[v][0]
-		vlong = stations[v][1]
-		for w in range(num_stations):
-			if not marked_v[w]:
-				wlat = stations[w][0]
-				wlong = stations[w][1]
-				d = distance(vlat, vlong, wlat, wlong)
-				if d < _DISTANCE:
-					capacity = np.max(totalDocks[v] + totalDocks[w])
-					# first edge is from source; last edge is incident on target
-					flow_edges.append(FlowEdge(v, w, capacity)) 
-					if not marked_w[w]:
-						# w has not been put on queue
-						marked_w[w] = True
-						q.append(w)
+		marked_v[v] = False
+		d = distance(v, stations)
+		connected = np.nonzero(d < _DISTANCE)[0]
+		capacities = capacity_func(totalDocks[connected], totalDocks[v])
+		# filter connected vertices; exclude if marked_v[w] = 0
+		filter_v = marked_v[connected]
+		capacities = capacities[filter_v]
+		connected = connected[filter_v]
+		# only 2 for loops!!
+		for i, w in enumerate(connected):
+			flow_edges.append(FlowEdge(v, w, capacities[i]))
+		# filter w before appending to q
+		filter_w = marked_w[connected]
+		connected = connected[filter_w]
+		for w in connected:
+			q.append(w)
+			marked_w[w] = False
 	return flow_edges
+
+def getCapacities_Max(array_of_capacities, capacity_of_v):
+	'''capacity of edge = max of totalDocks at v, w
+
+	return array of capacities'''
+	capacities = array_of_capacities
+	delta = capacities - capacity_of_v
+	capacities[delta < 0] = capacity_of_v
+	return capacities
+
+def getCapacities_Sum(array_of_capacities, capacity_of_v):
+	'''capacity of edge = sum of totalDocks at v, w
+
+	return array of capacities'''
+	return array_of_capacities + capacity_of_v
 
 def drawScatterPlot(stations, source, target):
 	'''draw scatter plot

@@ -9,7 +9,6 @@ Capacity on an edge is the sum of the bike docks at each edge vertex.
 usage: run NetworkFlowAnalyzer "citybike.json" <start-station> <end-station>
 
 '''
-import os
 import json
 import argparse
 import matplotlib.pyplot as plt
@@ -36,8 +35,9 @@ with open(args.filename) as f:
 
 num_stations = len(input["stationBeanList"])
 stations = np.random.random((num_stations, 2))  # 2 cols for latitude, longitude
-totalDocks = np.zeros((num_stations,), dtype=np.uint8)
-names = {}  # maps vertex number to stationName
+#totalDocks = np.zeros((num_stations,), dtype=np.uint8)
+totalDocks = np.zeros((num_stations,), dtype=np.int16)
+names = {}  # maps vertex number to stationNam
 vertex = {} # maps stationName to vertex number
 
 # store data
@@ -52,62 +52,65 @@ for station in input["stationBeanList"]:
     row += 1
 
 # process optional args
-# print list of stations and then return to command line
 if args.stations:
+    # print list of stations and then return to command line
     for row in range(num_stations):
         print names[row]
-    os.sys.exit(os.X_OK)    # not sure how to quit here; this is not an error
-
-# strategy:
-start_station = args.start_station
-end_station = args.end_station
-# get vertex numbers
-source = vertex[start_station]
-target = vertex[end_station]
-# connect stations
-flow_edges = MaxFlowUtils.findFlowEdges(stations, totalDocks, source)
-
-# build flow network
-# number of vertices = num_stations
-flownet = FlowNetwork(V=num_stations)
-for e in flow_edges:
-	flownet.addEdge(e)
-
-# get number of connected components in graph
-cc = ConnectedComponent.CC(flownet)
-if cc.id(source) == cc.id(target):
-    # calculate maxflow using Ford-Fulkerson algorithm
-    maxflow = FF(flownet, source, target)
-    # plot flow network
-    MaxFlowUtils.plotFlowNetwork(stations, source, target, flow_edges)
-    plt.show()
-    # flow_edges.append(FlowEdge(329, 330, totalDocks[329] + totalDocks[330]))
-
-    # plot flow
-    flowpath = MaxFlowUtils.flowPath(stations, flownet, source)
-    flowpath2 = copy.copy(flowpath)
-    MaxFlowUtils.plotFlow(stations, source, target, flowpath)
-    plt.show()
-    # convert vertices in flow path to station names
-    station_path = MaxFlowUtils.toStationNames(flowpath2, names)
-    while len(station_path) > 0:
-        print station_path.popleft()
-
-    print 'start: {}'.format(start_station)
-    print 'target: {}'.format(end_station)
-    print 'maxflow = {}'.format(maxflow.value())
-    print
 else:
-    print '{} and {} are not connected.'.format(start_station, end_station)
+    # strategy:
+    start_station = args.start_station
+    end_station = args.end_station
+    # get vertex numbers
+    source = vertex[start_station]
+    target = vertex[end_station]
+    # connect stations
+    flow_edges = MaxFlowUtils.findFlowEdges(stations, totalDocks, source, MaxFlowUtils.getCapacities_Max)
 
-mincut = MaxFlowUtils.findMinCut(maxflow, num_stations)
-stcut, stcut_v = MaxFlowUtils.findSTcut(mincut, flownet, names)
-print 'Edges that, if cut, would separate {} from {} (aka st-cut):\n'.format(start_station, end_station)
-for e in stcut:
-    print e
-# plot edges in st-cut
-MaxFlowUtils.plotSTcut(stations, source, target, flowpath, stcut_v)
-plt.show()
+    # build flow network
+    # number of vertices = num_stations
+    flownet = FlowNetwork(V=num_stations)
+    for e in flow_edges:
+    	flownet.addEdge(e)
+
+    # get number of connected components in graph
+    cc = ConnectedComponent.CC(flownet)
+    if cc.id(source) == cc.id(target):
+        # calculate maxflow using Ford-Fulkerson algorithm
+        maxflow = FF(flownet, source, target)
+        # plot flow network
+        MaxFlowUtils.plotFlowNetwork(stations, source, target, flow_edges)
+        plt.show()
+        # flow_edges.append(FlowEdge(329, 330, totalDocks[329] + totalDocks[330]))
+
+        # plot flow
+        flowpath = MaxFlowUtils.flowPath(stations, flownet, source)
+        flowpath2 = copy.copy(flowpath)
+        MaxFlowUtils.plotFlow(stations, source, target, flowpath)
+        plt.show()
+
+        # convert vertices in flow path to station names
+        station_path = MaxFlowUtils.toStationNames(flowpath2, names)
+        while len(station_path) > 0:
+            print station_path.popleft()
+
+        print 'start: {}'.format(start_station)
+        print 'end: {}'.format(end_station)
+        print 'maxflow = {}'.format(maxflow.value())
+        print
+
+        mincut = MaxFlowUtils.findMinCut(maxflow, num_stations)
+        stcut, stcut_v = MaxFlowUtils.findSTcut(mincut, flownet, names)
+        print 'Edges that, if cut, would separate {} from {} (aka st-cut):\n'.format(start_station, end_station)
+        for e in stcut:
+            print e
+
+        # plot edges in st-cut
+        MaxFlowUtils.plotSTcut(stations, source, target, flowpath, stcut_v)
+        plt.show()
+    else:
+        print '{} and {} are not connected.'.format(start_station, end_station)
+
+    
 
 
 
