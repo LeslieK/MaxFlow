@@ -80,12 +80,14 @@ if cc.id(source) == cc.id(target):
     maxflow = FF(flownet, source, target)
     # plot flow network
     MaxFlowUtils.plotFlowNetwork(stations, source, target, flow_edges)
+    plt.show()
     # flow_edges.append(FlowEdge(329, 330, totalDocks[329] + totalDocks[330]))
 
     # plot flow
     flowpath = MaxFlowUtils.flowPath(stations, flownet, source)
     flowpath2 = copy.copy(flowpath)
     MaxFlowUtils.plotFlow(stations, source, target, flowpath)
+    plt.show()
     # convert vertices in flow path to station names
     station_path = MaxFlowUtils.toStationNames(flowpath2, names)
     while len(station_path) > 0:
@@ -99,10 +101,13 @@ else:
     print '{} and {} are not connected.'.format(start_station, end_station)
 
 mincut = MaxFlowUtils.findMinCut(maxflow, num_stations)
-stcut = MaxFlowUtils.findSTcut(mincut, flownet, names)
+stcut, stcut_v = MaxFlowUtils.findSTcut(mincut, flownet, names)
 print 'Edges that, if cut, would separate {} from {} (aka st-cut):\n'.format(start_station, end_station)
 for e in stcut:
     print e
+# plot edges in st-cut
+MaxFlowUtils.plotSTcut(stations, source, target, flowpath, stcut_v)
+plt.show()
 
 
 
