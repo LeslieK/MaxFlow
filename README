@@ -5,14 +5,17 @@ Each point is a bike station in the citybike network
 Pairs of points are connected if they are a distance of _DISTANCE km
 from each other. (Ex, .4 km)
 
-Capacity on an edge is the sum of the bike docks at each edge vertex.
+Capacity on an edge is the max of the bike docks at each edge vertex.
 
 usage: run NetworkFlowAnalyzer.py "citybike.json" <start-station> <end-station>
 
 Example:
 run NetworkFlowAnalyzer.py "citybike.json" "Broadway & Battery Pl" "E 47 St & 1 Ave"
 
-run NetworkFlowAnalyzer.py [-h] [--stations] [--start_station START_STATION] [--end_station END_STATION] filename-json
+run NetworkFlowAnalyzer.py [-h] [--stations] 
+                          [--start_station START_STATION] 
+                          [--end_station END_STATION] filename-json
+                          
 default start_station: "Broadway & Battery Pl"
 default end_station: "E 47 St & 1 Ave"
 
