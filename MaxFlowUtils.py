@@ -3,7 +3,7 @@ from MaxFlowLib import FlowEdge
 import matplotlib.pyplot as plt
 import numpy as np
 import copy
-_DISTANCE = .4
+_DISTANCE = .4 	# km
 
 def distance(lat1, long1, lat2, long2):
 	'''returns distance, in km, between 2 points
@@ -63,7 +63,7 @@ def findFlowEdges(stations, totalDocks, source):
 				wlong = stations[w][1]
 				d = distance(vlat, vlong, wlat, wlong)
 				if d < _DISTANCE:
-					capacity = totalDocks[v] + totalDocks[w]
+					capacity = np.max(totalDocks[v] + totalDocks[w])
 					# first edge is from source; last edge is incident on target
 					flow_edges.append(FlowEdge(v, w, capacity)) 
 					if not marked_w[w]:
@@ -80,7 +80,7 @@ def plotFlow(stations, source, target, flowpath):
 	source: source vertex
 	target: target vertex
 	'''
-	#draw scatter plot
+	# draw scatter plot
 	plt.xlabel('latitude')
 	plt.ylabel('longitude')
 	plt.title('citibike stations in NYC')
@@ -109,15 +109,15 @@ def plotFlow(stations, source, target, flowpath):
 	plt.show()
 
 
-def drawScatterPlot(stations, flow_edges, source, target):
-	'''draw scatter plot of NYC citibike stations
+def plotFlowNetwork(stations, source, target, flow_edges):
+	'''draw network of NYC citibike stations
 
 	stations: num_stations x 2 numpy array
 	flow_edges: a list
 	source: source vertex
 	target: target vertex
 	'''
-	#draw scatter plot
+	# draw scatter plot
 	plt.xlabel('latitude')
 	plt.ylabel('longitude')
 	plt.title('citibike stations in NYC')
@@ -141,11 +141,28 @@ def findMinCut(maxflow, num_stations):
 	'''
 	find all stations in mincut 
 	'''
-	mincut = []
+	mincut = set()
 	for v in range(num_stations):
 		if maxflow.inCut(v):
-			mincut.append(v)
+			mincut.add(v)
 	return mincut
+
+def findSTcut(mincut, flownet, names):
+	'''prints all edges in s-t cut
+
+	s-t cut: set of edges from partition containing s
+	to partition containing t
+	'''
+	stcut = set()
+	#tot = 0
+	for vertex in mincut:
+		for e in flownet.adj(vertex):
+			if vertex == e.source() and e.other(vertex) not in mincut: 
+				if e.flow() == e.capacity():
+					#tot += e.capacity()
+					stcut.add('{:<30} {:^5} {:<30}  {:>5}/{:<5}'.format(names[vertex], '=>', names[e.sink()], e.flow(), e.capacity()))
+	#print tot
+	return stcut
 
 def flowPath(stations, flownet, source):
 	'''return vertices in flow path

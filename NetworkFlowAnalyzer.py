@@ -52,10 +52,11 @@ for station in input["stationBeanList"]:
     row += 1
 
 # process optional args
+# print list of stations and then return to command line
 if args.stations:
     for row in range(num_stations):
         print names[row]
-    os.sys.exit(os.X_OK)    # not sure how to return to quit here; this is not an error
+    os.sys.exit(os.X_OK)    # not sure how to quit here; this is not an error
 
 # strategy:
 start_station = args.start_station
@@ -77,11 +78,11 @@ cc = ConnectedComponent.CC(flownet)
 if cc.id(source) == cc.id(target):
     # calculate maxflow using Ford-Fulkerson algorithm
     maxflow = FF(flownet, source, target)
-    # draw scatter plot
-    MaxFlowUtils.drawScatterPlot(stations, flow_edges, source, target)
+    # plot flow network
+    MaxFlowUtils.plotFlowNetwork(stations, source, target, flow_edges)
     # flow_edges.append(FlowEdge(329, 330, totalDocks[329] + totalDocks[330]))
 
-    # plot flow path
+    # plot flow
     flowpath = MaxFlowUtils.flowPath(stations, flownet, source)
     flowpath2 = copy.copy(flowpath)
     MaxFlowUtils.plotFlow(stations, source, target, flowpath)
@@ -93,12 +94,15 @@ if cc.id(source) == cc.id(target):
     print 'start: {}'.format(start_station)
     print 'target: {}'.format(end_station)
     print 'maxflow = {}'.format(maxflow.value())
+    print
 else:
     print '{} and {} are not connected.'.format(start_station, end_station)
 
-# mincut = MaxFlowUtils.findMinCut(maxflow, num_stations)
-# for v in mincut:
-#     print names[v] + "\n"
+mincut = MaxFlowUtils.findMinCut(maxflow, num_stations)
+stcut = MaxFlowUtils.findSTcut(mincut, flownet, names)
+print 'Edges that, if cut, would separate {} from {} (aka st-cut):\n'.format(start_station, end_station)
+for e in stcut:
+    print e
 
 
 

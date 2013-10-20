@@ -64,7 +64,7 @@ Proof: Each augmenting path increases the flow by a positive integer (the bottle
 No matter what method we choose to find an augmenting path and no matter what paths we find, we always end up with a flow that does not admit an augmenting path, which therefore must be a maxflow.
 
 Mincut:
-Given an st-flow with value equal to maxflow, the mincut (Cs, Ct) such that Cs is the set of vertices reachable from s along edges that have capacity in both forward and backward directions. (All forward edges are not full; all backward edges are not empty.)
+Given an st-flow with value equal to maxflow, the mincut (Cs, Ct) such that Cs is the set of vertices reachable from s along edges that have capacity in either the forward or backward directions. (A vertex can be reached from s by travelling along a forward edge or backward edge that is not full.)
 
 
 
