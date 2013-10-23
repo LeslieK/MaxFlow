@@ -39,22 +39,21 @@ for row, station in enumerate(input["stationBeanList"]):
     stations[row][0] = station["latitude"]
     stations[row][1] = station["longitude"]
     stations[row][2] = station["totalDocks"]
-    #totalDocks[row] = station["totalDocks"]
     node = Station(station, row)
-    nodesByName[node.name] = node
     nodesByNumber[node.number] = node
+    if node.name == args.start_station:
+        start_station = node
+    elif node.name == args.end_station:
+        end_station = node
+
 
 # process optional args
 if args.stations:
     # print list of stations and then return to command line
     for row in range(num_stations):
-        print names[row]
+        print nodesByNumber[row].name
 else:
-    # start and end station objects
-    start_station = nodesByName[args.start_station]
-    end_station = nodesByName[args.end_station]
-
-    graph = Graph(stations, start_station, end_station, getCapacities_Max, nodesByName, nodesByNumber)
+    graph = Graph(stations, start_station, end_station, getCapacities_Max, nodesByNumber)
     
     if graph.isConnected:
         # plot flow network
@@ -69,13 +68,13 @@ else:
         plt.show()
 
         #print flow
-        graph.printFlow()
+        graph.printFlow(nodesByNumber)
 
         print 'start: {}'.format(start_station.name)
         print 'end: {}'.format(end_station.name)
         print 'maxflow = {}'.format(graph.maxflow())
         print
 
-        graph.printSTcut()
+        graph.printSTcut(nodesByNumber)
     else:
         print '{} and {} are not connected.'.format(start_station.name, end_station.name)

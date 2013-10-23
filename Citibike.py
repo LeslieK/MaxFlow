@@ -40,7 +40,7 @@ class Station(object):
 class Graph(object):
 	'''build network of stations; connect with edges'''
 
-	def __init__(self, stations, start_station, end_station, capacity_func, nodesByName, nodesByNumber):
+	def __init__(self, stations, start_station, end_station, capacity_func, nodesByNumber):
 		'''build graph of stations and edges
 
 		start_station: station object
@@ -48,8 +48,8 @@ class Graph(object):
 		'''
 
 		# global
-		self.nodesByName = nodesByName
-		self.nodesByNumber = nodesByNumber
+		# self.nodesByName = nodesByName
+		# self.nodesByNumber = nodesByNumber
 		
 		# flow network
 		self.stations = stations
@@ -155,9 +155,9 @@ class Graph(object):
 			plt.plot([self.stations[v][0], self.stations[w][0]], [self.stations[v][1], self.stations[w][1]], 'b-')
 
 
-	def printFlow(self):
+	def printFlow(self, nodesByNumber):
 		'''print each flow edge using station names'''
-		station_path = self.toStationNames(self.flowpath)
+		station_path = self.toStationNames(self.flowpath, nodesByNumber)
 		while len(station_path) > 0:
 			print station_path.popleft()
 
@@ -187,15 +187,17 @@ class Graph(object):
 		return flowpath
 
 
-	def toStationNames(self, flowpath):
+	def toStationNames(self, flowpath, nodesByNumber):
 		'''convert each flow edge to station names
 
 		flowpath: list of edges
 		'''
 		station_path = collections.deque()
 		for e in self.flowpath:
-			source_station = self.nodesByNumber[e.source()].name
-			end_station = self.nodesByNumber[e.sink()].name
+			# source_station = self.nodesByNumber[e.source()].name
+			# end_station = self.nodesByNumber[e.sink()].name
+			source_station = nodesByNumber[e.source()].name
+			end_station = nodesByNumber[e.sink()].name
 			edge = '{:<30} {:^5} {:<30}  {:>5}/{:<5}\n'.format(source_station, '=>', end_station, e.flow(), e.capacity())
 			station_path.append(edge)
 		return station_path
@@ -210,7 +212,7 @@ class Graph(object):
 				mincut.add(v)
 		return mincut
 
-	def findSTcut(self, names=True):
+	def findSTcut(self, nodesByNumber=None, names=False):
 		'''
 		find all edges that cross the s-t cut
 
@@ -224,19 +226,21 @@ class Graph(object):
 				if vertex == e.source() and e.other(vertex) not in mincut: 
 					if e.flow() == e.capacity():
 						if names:
-							from_station = self.nodesByNumber[vertex].name
-							to_station = self.nodesByNumber[e.sink()].name
+							# from_station = self.nodesByNumber[vertex].name
+							# to_station = self.nodesByNumber[e.sink()].name
+							from_station = nodesByNumber[vertex].name
+							to_station = nodesByNumber[e.sink()].name
 							stcut.add('{:<30} {:^5} {:<30}  {:>5}/{:<5}'.format(from_station, '=>', to_station, e.flow(), e.capacity()))
 						else:
 							stcut.add(e)
 		return stcut
 
-	def printSTcut(self):
+	def printSTcut(self, nodesByNumber):
 		'''print all edges that cross the s-t cut
 
 		s-t cut: a partition of the flow network
 		'''
-		stcut = self.findSTcut(names=True)
+		stcut = self.findSTcut(nodesByNumber, names=True)
 		print 'Edges that, if cut, would separate {} from {} (aka st-cut):\n'.format(self.start_station.name, self.end_station.name)
 		for e in stcut:
 			print e
