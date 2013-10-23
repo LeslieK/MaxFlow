@@ -54,7 +54,7 @@ else:
     start_station = nodesByName[args.start_station]
     end_station = nodesByName[args.end_station]
 
-    graph = Graph(stations, start_station, end_station, nodesByName, nodesByNumber, getCapacities_Max)
+    graph = Graph(stations, start_station, end_station, getCapacities_Max, nodesByName, nodesByNumber)
     
     if graph.isConnected:
         # plot flow network

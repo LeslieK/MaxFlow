@@ -40,7 +40,7 @@ class Station(object):
 class Graph(object):
 	'''build network of stations; connect with edges'''
 
-	def __init__(self, stations, start_station, end_station, nodesByName, nodesByNumber, capacity_func):
+	def __init__(self, stations, start_station, end_station, capacity_func, nodesByName, nodesByNumber):
 		'''build graph of stations and edges
 
 		start_station: station object
@@ -192,6 +192,7 @@ class Graph(object):
 
 		flowpath: list of edges
 		'''
+		station_path = collections.deque()
 		for e in self.flowpath:
 			source_station = self.nodesByNumber[e.source()].name
 			end_station = self.nodesByNumber[e.sink()].name
