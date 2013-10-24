@@ -40,28 +40,25 @@ class Station(object):
 class Graph(object):
 	'''build network of stations; connect with edges'''
 
-	def __init__(self, stations, start_station, end_station, capacity_func, nodesByNumber):
+	def __init__(self, stations):
 		'''build graph of stations and edges
 
 		start_station: station object
 		end_station: station_object
 		'''
-
-		# global
-		# self.nodesByName = nodesByName
-		# self.nodesByNumber = nodesByNumber
 		
 		# flow network
 		self.stations = stations
 		self.num_stations = len(stations)
 		self.flownet = FlowNetwork(V=self.num_stations)
+		#self.cc is set by self.buildFlowNetwork()
 		self.flowpath = []
+		#self.ff is set by self.findFlowPath(start_station, end_station)
 
-		# start and end nodes
-		self.start_station = start_station
-		self.end_station = end_station
-		self.isConnected = False
+	def buildFlowNetwork(self, start_station, nodesByNumber, capacity_func):
+		'''add edges and capacities to flow network
 
+		'''
 		# edges
 		flow_edges = set()
 
@@ -70,7 +67,7 @@ class Graph(object):
 		marked_w = np.ones((self.num_stations,), dtype=bool) # marks all to_vertices (aka w)
 		
 		q = collections.deque()			# a queue of station objects
-		q.append(self.start_station)
+		q.append(start_station)
 	
 		while len(q) > 0:
 			# q not empty
@@ -103,35 +100,61 @@ class Graph(object):
 		# add edges to network
 		for e in flow_edges:
 			self.flownet.addEdge(e)
-		# check if start and end are connected
-		self.setIsConnected()
-		if self.isConnected:
-			self.ff = FF(self.flownet, self.start_station.number, self.end_station.number)
-			self.flowpath = self.flowPath()
+		# create connected componenets data structure
+		self.cc = ConnectedComponent.CC(self.flownet) 
 
-	def setIsConnected(self):
-		'''sets the instance variable isConnected
+	def isConnected(self, start_station, end_station):
+		'''checks whether start and end stations are in the same component.
 
 		True if graph is one connected component; False otherwise
 		'''
-		cc = ConnectedComponent.CC(self.flownet)
-		source = self.start_station.number
-		end = self.end_station.number
-		self.isConnected = (cc.id(source) == cc.id(end))
+		source = start_station.number
+		end = end_station.number
+		return self.cc.id(source) == self.cc.id(end)
+
+	def findFlowPath(self, start_station, end_station):
+		'''assign flow values to flow network edges
+
+		flowpath: paths with non-zero flow
+		ff: object that has methods to get maxflow and mincut
+		'''
+		self.ff = FF(self.flownet, start_station.number, end_station.number)
+		self.flowPath(start_station)
+
+	def flowPath(self, start_station):
+		'''return a list of edges in flow path
+
+		source = start_station number
+		'''
+		source = start_station.number
+		# build flow path
+		# working queue to find next edge in path
+		q = collections.deque()
+		marked = [False] * self.num_stations
+		marked[source] = True
+		q.append(source)
+		while len(q) > 0:
+			v = q.popleft()
+			for e in self.flownet.adj(v):
+				if v == e.source() and e.flow() > 0:
+					self.flowpath.append(e)
+					if not marked[e.sink()]:
+						marked[e.sink()] = True
+						q.append(e.sink())
 
 	def maxflow(self):
 		'''find maxflow of flow network'''
 		return self.ff.value()
 
 
-	def plotFlowNetwork(self):
+	def plotFlowNetwork(self, start_station, end_station, nodesByNumber):
 		'''draw network of NYC citibike stations
 
 		source: start_station number
 		end: end_station number
 		'''
-		source = self.start_station.number
-		end = self.end_station.number
+		source = start_station.number
+		end = end_station.number
 		drawScatterPlot(self.stations, source, end)
 		plt.title('citibike stations in NYC: flow network')
 
@@ -142,10 +165,10 @@ class Graph(object):
 		    plt.plot([self.stations[v][0],self.stations[w][0]], [self.stations[v][1], self.stations[w][1]], 'b-')
 		plt.show()
 
-	def plotFlow(self):
+	def plotFlow(self, start_station, end_station):
 		'''plot path of flow'''
-		source = self.start_station.number
-		end = self.end_station.number
+		source = start_station.number
+		end = end_station.number
 		drawScatterPlot(self.stations, source, end)
 		plt.title('citibike stations in NYC: paths of flow')
 
@@ -157,45 +180,17 @@ class Graph(object):
 
 	def printFlow(self, nodesByNumber):
 		'''print each flow edge using station names'''
-		station_path = self.toStationNames(self.flowpath, nodesByNumber)
+		station_path = self.toStationNames(nodesByNumber)
 		while len(station_path) > 0:
 			print station_path.popleft()
 
 
-	def flowPath(self):
-		'''return a list of edges in flow path
-
-		flownet: flow network
-		source = start_station number
-		'''
-		source = self.start_station.number
-		# build flow path
-		flowpath = []
-		# working queue to find next edge in path
-		q = collections.deque()
-		marked = [False] * self.num_stations
-		marked[source] = True
-		q.append(source)
-		while len(q) > 0:
-			v = q.popleft()
-			for e in self.flownet.adj(v):
-				if v == e.source() and e.flow() > 0:
-					flowpath.append(e)
-					if not marked[e.sink()]:
-						marked[e.sink()] = True
-						q.append(e.sink())
-		return flowpath
-
-
-	def toStationNames(self, flowpath, nodesByNumber):
+	def toStationNames(self, nodesByNumber):
 		'''convert each flow edge to station names
 
-		flowpath: list of edges
 		'''
 		station_path = collections.deque()
 		for e in self.flowpath:
-			# source_station = self.nodesByNumber[e.source()].name
-			# end_station = self.nodesByNumber[e.sink()].name
 			source_station = nodesByNumber[e.source()].name
 			end_station = nodesByNumber[e.sink()].name
 			edge = '{:<30} {:^5} {:<30}  {:>5}/{:<5}\n'.format(source_station, '=>', end_station, e.flow(), e.capacity())
@@ -226,8 +221,6 @@ class Graph(object):
 				if vertex == e.source() and e.other(vertex) not in mincut: 
 					if e.flow() == e.capacity():
 						if names:
-							# from_station = self.nodesByNumber[vertex].name
-							# to_station = self.nodesByNumber[e.sink()].name
 							from_station = nodesByNumber[vertex].name
 							to_station = nodesByNumber[e.sink()].name
 							stcut.add('{:<30} {:^5} {:<30}  {:>5}/{:<5}'.format(from_station, '=>', to_station, e.flow(), e.capacity()))
@@ -235,24 +228,25 @@ class Graph(object):
 							stcut.add(e)
 		return stcut
 
-	def printSTcut(self, nodesByNumber):
+	def printSTcut(self, start_station, end_station, nodesByNumber):
 		'''print all edges that cross the s-t cut
 
 		s-t cut: a partition of the flow network
 		'''
 		stcut = self.findSTcut(nodesByNumber, names=True)
-		print 'Edges that, if cut, would separate {} from {} (aka st-cut):\n'.format(self.start_station.name, self.end_station.name)
+		print 'Edges that, if cut, would separate {} from {} (aka st-cut):\n'.format(start_station.name, end_station.name)
 		for e in stcut:
 			print e
 
 
-	def plotSTcut(self):
+	def plotSTcut(self, start_station, end_station):
 		'''plot mincut and the edges that bridge the st-cut
 
+		ff: Ford-Fulkerson object that contains maxflow and mincut
 		stcut: set of edges that bridge st-cut
 		'''
 		stcut = self.findSTcut(names=False)
-		self.plotFlow()
+		self.plotFlow(start_station, end_station)
 		plt.title('citibike stations in NYC: edges in st-cut')
 
 		# draw edges in st-cut

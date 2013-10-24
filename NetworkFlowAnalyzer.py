@@ -31,8 +31,6 @@ with open(args.filename) as f:
 
 num_stations = len(input["stationBeanList"])
 stations = np.zeros((num_stations, 3))
-totalDocks = np.zeros((num_stations,), dtype=np.int16)  # need to support neg numbers
-nodesByName = {}        # maps stationName => node
 nodesByNumber = {}     # maps node number => node object
 
 for row, station in enumerate(input["stationBeanList"]):
@@ -46,25 +44,30 @@ for row, station in enumerate(input["stationBeanList"]):
     elif node.name == args.end_station:
         end_station = node
 
-
 # process optional args
 if args.stations:
     # print list of stations and then return to command line
     for row in range(num_stations):
         print nodesByNumber[row].name
 else:
-    graph = Graph(stations, start_station, end_station, getCapacities_Max, nodesByNumber)
-    
-    if graph.isConnected:
+    graph = Graph(stations)
+
+    # build flow network from a start_station
+    graph.buildFlowNetwork(start_station, nodesByNumber, getCapacities_Max)    
+
+    if graph.isConnected(start_station, end_station):
         # plot flow network
-        graph.plotFlowNetwork()
+        graph.plotFlowNetwork(start_station, end_station, nodesByNumber)
+
+        # assign flow values to flow network
+        graph.findFlowPath(start_station, end_station)
 
         # plot flow
-        graph.plotFlow()
+        graph.plotFlow(start_station, end_station)
         plt.show()
 
         # plot S-T cut
-        graph.plotSTcut()
+        graph.plotSTcut(start_station, end_station)
         plt.show()
 
         #print flow
@@ -75,6 +78,6 @@ else:
         print 'maxflow = {}'.format(graph.maxflow())
         print
 
-        graph.printSTcut(nodesByNumber)
+        graph.printSTcut(start_station, end_station, nodesByNumber)
     else:
         print '{} and {} are not connected.'.format(start_station.name, end_station.name)
